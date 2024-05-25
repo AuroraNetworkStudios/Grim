@@ -8,6 +8,7 @@ import ac.grim.grimac.checks.impl.aim.processor.AimProcessor;
 import ac.grim.grimac.checks.impl.badpackets.*;
 import ac.grim.grimac.checks.impl.baritone.Baritone;
 import ac.grim.grimac.checks.impl.combat.Reach;
+import ac.grim.grimac.checks.impl.combat.SelfDamage;
 import ac.grim.grimac.checks.impl.crash.*;
 import ac.grim.grimac.checks.impl.exploit.ExploitA;
 import ac.grim.grimac.checks.impl.exploit.ExploitB;
@@ -42,6 +43,7 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
+import org.checkerframework.checker.units.qual.C;
 
 public class CheckManager {
     ClassToInstanceMap<PacketCheck> packetChecks;
@@ -59,6 +61,7 @@ public class CheckManager {
         // Include post checks in the packet check too
         packetChecks = new ImmutableClassToInstanceMap.Builder<PacketCheck>()
                 .put(Reach.class, new Reach(player))
+                .put(SelfDamage.class, new SelfDamage(player))
                 .put(PacketEntityReplication.class, new PacketEntityReplication(player))
                 .put(PacketChangeGameState.class, new PacketChangeGameState(player))
                 .put(CompensatedInventory.class, new CompensatedInventory(player))
@@ -92,6 +95,27 @@ public class CheckManager {
                 .put(BadPacketsW.class, new BadPacketsW(player))
                 .put(BadPacketsX.class, new BadPacketsX(player))
                 .put(BadPacketsY.class, new BadPacketsY(player))
+
+                .put(BadPacketsItemDrop.class, new BadPacketsItemDrop(player))
+                .put(BadPacketsBookEdit.class, new BadPacketsBookEdit(player))
+                .put(BadPacketsSignCrash.class, new BadPacketsSignCrash(player))
+                .put(BadPacketsMeteorScan.class, new BadPacketsMeteorScan(player))
+                .put(BadPacketsNoResponse.class, new BadPacketsNoResponse(player))
+                .put(BadPacketsMapInteract.class, new BadPacketsMapInteract(player))
+                .put(BadpacketsWindowCrash.class, new BadpacketsWindowCrash(player))
+                .put(BadPacketsInfinityMove.class, new BadPacketsInfinityMove(player))
+                .put(BadpacketsFakeBookEdit.class, new BadpacketsFakeBookEdit(player))
+                .put(BadPacketsUnrealCommand.class, new BadPacketsUnrealCommand(player))
+                .put(BadpacketsBookJsonCompound.class, new BadpacketsBookJsonCompound(player))
+                .put(BadPacketsCreativeInventory.class, new BadPacketsCreativeInventory(player))
+                .put(BadPacketsBlockBreakInventory.class, new BadPacketsBlockBreakInventory(player))
+                .put(BadPacketsChunkUnloadInventory.class, new BadPacketsChunkUnloadInventory(player))
+
+                .put(CrashEndGateway.class, new CrashEndGateway(player))
+                .put(CrashNullAddress.class, new CrashNullAddress(player))
+                .put(CrashRedstoneWire.class, new CrashRedstoneWire(player))
+                .put(BadPacketsOfflinePacket.class, new BadPacketsOfflinePacket(player))
+
                 .put(FastBreak.class, new FastBreak(player))
                 .put(TransactionOrder.class, new TransactionOrder(player))
                 .put(NoSlowB.class, new NoSlowB(player))
