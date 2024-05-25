@@ -43,7 +43,6 @@ import com.github.retrooper.packetevents.event.PacketReceiveEvent;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.google.common.collect.ClassToInstanceMap;
 import com.google.common.collect.ImmutableClassToInstanceMap;
-import org.checkerframework.checker.units.qual.C;
 
 public class CheckManager {
     ClassToInstanceMap<PacketCheck> packetChecks;
@@ -61,7 +60,6 @@ public class CheckManager {
         // Include post checks in the packet check too
         packetChecks = new ImmutableClassToInstanceMap.Builder<PacketCheck>()
                 .put(Reach.class, new Reach(player))
-                .put(SelfDamage.class, new SelfDamage(player))
                 .put(PacketEntityReplication.class, new PacketEntityReplication(player))
                 .put(PacketChangeGameState.class, new PacketChangeGameState(player))
                 .put(CompensatedInventory.class, new CompensatedInventory(player))
@@ -95,6 +93,7 @@ public class CheckManager {
                 .put(BadPacketsW.class, new BadPacketsW(player))
                 .put(BadPacketsX.class, new BadPacketsX(player))
                 .put(BadPacketsY.class, new BadPacketsY(player))
+                .put(BadPacketsZ.class, new BadPacketsZ(player))
 
                 .put(BadPacketsItemDrop.class, new BadPacketsItemDrop(player))
                 .put(BadPacketsBookEdit.class, new BadPacketsBookEdit(player))
