@@ -4,11 +4,13 @@ import ac.grim.grimac.player.GrimPlayer;
 import ac.grim.grimac.utils.data.ShulkerData;
 import ac.grim.grimac.utils.data.TrackerData;
 import ac.grim.grimac.utils.data.packetentity.*;
+import ac.grim.grimac.utils.data.packetentity.dragon.PacketEntityEnderDragon;
 import ac.grim.grimac.utils.math.GrimMath;
 import ac.grim.grimac.utils.nmsutil.BoundingBoxSize;
 import ac.grim.grimac.utils.nmsutil.WatchableIndexUtil;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.manager.server.ServerVersion;
+import com.github.retrooper.packetevents.protocol.attribute.Attributes;
 import com.github.retrooper.packetevents.protocol.entity.data.EntityData;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityType;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
@@ -16,15 +18,19 @@ import com.github.retrooper.packetevents.protocol.player.ClientVersion;
 import com.github.retrooper.packetevents.protocol.potion.PotionType;
 import com.github.retrooper.packetevents.protocol.potion.PotionTypes;
 import com.github.retrooper.packetevents.protocol.world.BlockFace;
+import com.github.retrooper.packetevents.resources.ResourceLocation;
 import com.github.retrooper.packetevents.util.Vector3d;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerUpdateAttributes;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import org.bukkit.Bukkit;
 
 import java.util.*;
 
 public class CompensatedEntities {
+
     private static final UUID SPRINTING_MODIFIER_UUID = UUID.fromString("662A6B8D-DA3E-4C1C-8813-96EA6097278D");
     public static final UUID SNOW_MODIFIER_UUID = UUID.fromString("1eaf83ff-7207-4596-b37a-d7a07b3ec4ce");
+
     public final Int2ObjectOpenHashMap<PacketEntity> entityMap = new Int2ObjectOpenHashMap<>(40, 0.7f);
     public final Int2ObjectOpenHashMap<TrackerData> serverPositionsMap = new Int2ObjectOpenHashMap<>(40, 0.7f);
     public Integer serverPlayerVehicle = null;
@@ -63,6 +69,13 @@ public class CompensatedEntities {
         PacketEntity entity = entityMap.remove(entityID);
         if (entity == null) return;
 
+        if (entity instanceof PacketEntityEnderDragon) {
+            PacketEntityEnderDragon dragon = (PacketEntityEnderDragon) entity;
+            for (int i = 1; i < dragon.getParts().size() + 1; i++) {
+                entityMap.remove(entityID + i);
+            }
+        }
+
         for (PacketEntity passenger : new ArrayList<>(entity.passengers)) {
             passenger.eject();
         }
@@ -100,12 +113,12 @@ public class CompensatedEntities {
     public void updateAttributes(int entityID, List<WrapperPlayServerUpdateAttributes.Property> objects) {
         if (entityID == player.entityID) {
             for (WrapperPlayServerUpdateAttributes.Property snapshotWrapper : objects) {
-                final String key = snapshotWrapper.getKey();
-                if (key.toUpperCase().contains("MOVEMENT")) {
+                if (snapshotWrapper.getAttribute() == Attributes.GENERIC_MOVEMENT_SPEED) {
                     boolean found = false;
                     List<WrapperPlayServerUpdateAttributes.PropertyModifier> modifiers = snapshotWrapper.getModifiers();
                     for (WrapperPlayServerUpdateAttributes.PropertyModifier modifier : modifiers) {
-                        if (modifier.getUUID().equals(SPRINTING_MODIFIER_UUID)) {
+                        final ResourceLocation name = modifier.getName();
+                        if (name.getKey().equals(SPRINTING_MODIFIER_UUID.toString()) || name.getKey().equals("sprinting")) {
                             found = true;
                             break;
                         }
@@ -117,6 +130,8 @@ public class CompensatedEntities {
                     continue;
                 }
 
+                // TODO recode our attribute handling
+                final String key = snapshotWrapper.getKey();
                 // Attribute limits defined by https://minecraft.wiki/w/Attribute
                 // These seem to be clamped on the client, but not the server
                 switch (key) {
@@ -180,7 +195,7 @@ public class CompensatedEntities {
         double d0 = snapshotWrapper.getValue();
 
         List<WrapperPlayServerUpdateAttributes.PropertyModifier> modifiers = snapshotWrapper.getModifiers();
-        modifiers.removeIf(modifier -> modifier.getUUID().equals(SPRINTING_MODIFIER_UUID));
+        modifiers.removeIf(modifier -> modifier.getUUID().equals(SPRINTING_MODIFIER_UUID) || modifier.getName().getKey().equals("sprinting"));
 
         for (WrapperPlayServerUpdateAttributes.PropertyModifier attributemodifier : modifiers) {
             if (attributemodifier.getOperation() == WrapperPlayServerUpdateAttributes.PropertyModifier.Operation.ADDITION)
@@ -237,6 +252,8 @@ public class CompensatedEntities {
                 packetEntity = new PacketEntityTrackXRot(player, entityType, position.getX(), position.getY(), position.getZ(), xRot);
             } else if (EntityTypes.FISHING_BOBBER.equals(entityType)) {
                 packetEntity = new PacketEntityHook(player, entityType, position.getX(), position.getY(), position.getZ(), data);
+            } else if (EntityTypes.ENDER_DRAGON.equals(entityType)) {
+                packetEntity = new PacketEntityEnderDragon(player, entityID, position.getX(), position.getY(), position.getZ());
             } else {
                 packetEntity = new PacketEntity(player, entityType, position.getX(), position.getY(), position.getZ());
             }
@@ -362,7 +379,7 @@ public class CompensatedEntities {
         if (entity instanceof PacketEntityRideable) {
             int offset = 0;
             if (PacketEvents.getAPI().getServerManager().getVersion().isOlderThanOrEquals(ServerVersion.V_1_8_8)) {
-                if (entity.type == EntityTypes.PIG) {
+                if (entity.getType() == EntityTypes.PIG) {
                     EntityData pigSaddle = WatchableIndexUtil.getIndex(watchableObjects, 16);
                     if (pigSaddle != null) {
                         ((PacketEntityRideable) entity).hasSaddle = ((byte) pigSaddle.getValue()) != 0;
@@ -378,7 +395,7 @@ public class CompensatedEntities {
                 offset = 1;
             }
 
-            if (entity.type == EntityTypes.PIG) {
+            if (entity.getType() == EntityTypes.PIG) {
                 EntityData pigSaddle = WatchableIndexUtil.getIndex(watchableObjects, 17 - offset);
                 if (pigSaddle != null) {
                     ((PacketEntityRideable) entity).hasSaddle = (boolean) pigSaddle.getValue();
@@ -464,7 +481,7 @@ public class CompensatedEntities {
             }
         }
 
-        if (entity.type == EntityTypes.FIREWORK_ROCKET) {
+        if (entity.getType() == EntityTypes.FIREWORK_ROCKET) {
             int offset = 0;
             if (PacketEvents.getAPI().getServerManager().getVersion().isOlderThanOrEquals(ServerVersion.V_1_12_2)) {
                 offset = 2;

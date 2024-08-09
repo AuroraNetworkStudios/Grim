@@ -54,6 +54,11 @@ public class PacketPlayerRespawn extends PacketListenerAbstract {
     private static final byte KEEP_ALL = 3;
 
     private boolean hasFlag(WrapperPlayServerRespawn respawn, byte flag) {
+        // This packet was added in 1.16
+        // On versions older than 1.16, via keeps all data.
+        if (PacketEvents.getAPI().getServerManager().getVersion().isOlderThan(ServerVersion.V_1_16)) {
+            return true;
+        }
         return (respawn.getKeptData() & flag) != 0;
     }
 
@@ -130,12 +135,15 @@ public class PacketPlayerRespawn extends PacketListenerAbstract {
                 player.lastOnGround = false;
                 player.onGround = false;
                 player.isInBed = false;
+                player.packetStateData.setSlowedByUsingItem(false);
                 player.packetStateData.packetPlayerOnGround = false; // If somewhere else pulls last ground to fix other issues
                 player.packetStateData.lastClaimedPosition = new Vector3d();
                 player.filterMojangStupidityOnMojangStupidity = new Vector3d();
 
                 if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_19_4)) {
-                    player.isSprinting = !this.hasFlag(respawn, KEEP_TRACKED_DATA);
+                    if (!this.hasFlag(respawn, KEEP_TRACKED_DATA)) {
+                        player.isSprinting = false;
+                    }
                 } else {
                     player.lastSprintingForSpeed = false;
                 }
@@ -175,8 +183,8 @@ public class PacketPlayerRespawn extends PacketListenerAbstract {
                     player.compensatedWorld.setDimension(respawn.getDimension(), event.getUser());
                 }
 
-                // TODO this needs to be done for other client versions as well. And there should probably be some attribute holder that we can just call reset() on.
-                if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_20_5) && !this.hasFlag(respawn, KEEP_ATTRIBUTES)) {
+                // TODO And there should probably be some attribute holder that we can just call reset() on.
+                if (player.getClientVersion().isNewerThanOrEquals(ClientVersion.V_1_16) && !this.hasFlag(respawn, KEEP_ATTRIBUTES)) {
                     // Reset attributes if not kept
                     final PacketEntitySelf self = player.compensatedEntities.getSelf();
                     self.gravityAttribute = 0.08d;

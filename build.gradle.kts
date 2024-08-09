@@ -1,16 +1,15 @@
-//import net.minecrell.pluginyml.bukkit.BukkitPluginDescription.Permission
+import net.minecrell.pluginyml.bukkit.BukkitPluginDescription.Permission
 
 plugins {
     id("java")
     id("maven-publish")
     id("com.github.johnrengelman.shadow") version "8.1.1"
     id("io.freefair.lombok") version "8.6"
-    //id("net.minecrell.plugin-yml.bukkit") version "0.5.2"
+    id("net.minecrell.plugin-yml.bukkit") version "0.6.0"
 }
 
-
 group = "ac.grim.grimac"
-version = "2.3.64"
+version = "2.3.66"
 description = "Libre simulation anticheat designed for 1.20 with 1.8-1.20 support, powered by PacketEvents 2.0."
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 java.targetCompatibility = JavaVersion.VERSION_1_8
@@ -18,25 +17,30 @@ java.targetCompatibility = JavaVersion.VERSION_1_8
 repositories {
     mavenLocal()
     maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/") // Spigot
-    maven("https://jitpack.io/") // Grim API
+    maven("https://jitpack.io/") { // Grim API
+        content {
+            includeGroup("com.github.grimanticheat")
+        }
+    }
     maven("https://repo.viaversion.com") // ViaVersion
     maven("https://repo.aikar.co/content/groups/aikar/") // ACF
     maven("https://nexus.scarsz.me/content/repositories/releases") // Configuralize
     maven("https://repo.opencollab.dev/maven-snapshots/") // Floodgate
     maven("https://repo.opencollab.dev/maven-releases/") // Cumulus (for Floodgate)
     maven("https://repo.codemc.io/repository/maven-releases/") // PacketEvents
+    maven("https://repo.codemc.io/repository/maven-snapshots/")
     mavenCentral()
     // FastUtil, Discord-Webhooks
 }
 
 dependencies {
-    implementation("com.github.retrooper.packetevents:spigot:2.3.0")
+    implementation("com.github.retrooper:packetevents-spigot:2.4.1-SNAPSHOT")
     implementation("co.aikar:acf-paper:0.5.1-SNAPSHOT")
     implementation("club.minnced:discord-webhooks:0.8.0") // Newer versions include kotlin-stdlib, which leads to incompatibility with plugins that use Kotlin
     implementation("it.unimi.dsi:fastutil:8.5.13")
     implementation("github.scarsz:configuralize:1.4.0")
 
-    implementation("com.github.grimanticheat:grimapi:9f5aaef74b")
+    implementation("com.github.grimanticheat:grimapi:f10e6fd1b0")
     // Used for local testing: implementation("ac.grim.grimac:grimapi:1.0")
 
     implementation("org.jetbrains:annotations:24.1.0")
@@ -47,21 +51,23 @@ dependencies {
     compileOnly("io.netty:netty-all:4.1.85.Final")
 }
 
-/*bukkit {
+bukkit {
     name = "GrimAC"
     author = "GrimAC"
-
     main = "ac.grim.grimac.GrimAC"
     apiVersion = "1.13"
+    foliaSupported = true
 
     softDepend = listOf(
         "ProtocolLib",
         "ProtocolSupport",
-        "ViaVersion",
         "Essentials",
+        "ViaVersion",
         "ViaBackwards",
         "ViaRewind",
-        "Geyser-Spigot"
+        "Geyser-Spigot",
+        "floodgate",
+        "FastLogin"
     )
 
     permissions {
@@ -110,8 +116,7 @@ dependencies {
             default = Permission.Default.FALSE
         }
     }
-
-}*/
+}
 
 tasks.build {
     dependsOn(tasks.shadowJar)
@@ -135,7 +140,7 @@ tasks.shadowJar {
     relocate("club.minnced", "ac.grim.grimac.shaded.discord-webhooks")
     relocate("github.scarsz.configuralize", "ac.grim.grimac.shaded.configuralize")
     relocate("com.github.puregero", "ac.grim.grimac.shaded.com.github.puregero")
-    relocate("com.google.gson", "ac.grim.grimac.shaded.gson")
+    relocate("com.google.code.gson", "ac.grim.grimac.shaded.gson")
     relocate("alexh", "ac.grim.grimac.shaded.maps")
     relocate("it.unimi.dsi.fastutil", "ac.grim.grimac.shaded.fastutil")
     relocate("net.kyori", "ac.grim.grimac.shaded.kyori")

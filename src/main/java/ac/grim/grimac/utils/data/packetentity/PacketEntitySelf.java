@@ -1,9 +1,15 @@
 package ac.grim.grimac.utils.data.packetentity;
 
+import ac.grim.grimac.checks.impl.movement.NoSlowE;
 import ac.grim.grimac.player.GrimPlayer;
 import ac.grim.grimac.utils.collisions.datatypes.SimpleCollisionBox;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.manager.server.ServerVersion;
 import com.github.retrooper.packetevents.protocol.entity.type.EntityTypes;
+import com.github.retrooper.packetevents.protocol.player.ClientVersion;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.potion.PotionType;
+import com.github.retrooper.packetevents.protocol.potion.PotionTypes;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerUpdateAttributes;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,9 +30,23 @@ public class PacketEntitySelf extends PacketEntity {
     @Setter
     double breakSpeedMultiplier = 1.0, entityInteractRange = 3, blockInteractRange = 4.5;
 
+    public double getBlockInteractRange() {
+        // Server versions older than 1.20.5 don't send the attribute, if the player is in creative then assume legacy max reach distance.
+        // Or if they are on a client version older than 1.20.5.
+        if (player.gamemode == GameMode.CREATIVE
+                && (player.getClientVersion().isOlderThan(ClientVersion.V_1_20_5)
+                    || PacketEvents.getAPI().getServerManager().getVersion().isOlderThan(ServerVersion.V_1_20_5))) {
+            return 5.0;
+        }
+        return blockInteractRange;
+    }
+
     public PacketEntitySelf(GrimPlayer player) {
         super(EntityTypes.PLAYER);
         this.player = player;
+        if (player.getClientVersion().isOlderThan(ClientVersion.V_1_8)) {
+            this.stepHeight = 0.5f;
+        }
     }
 
     public PacketEntitySelf(GrimPlayer player, PacketEntitySelf old) {
@@ -47,6 +67,10 @@ public class PacketEntitySelf extends PacketEntity {
 
     @Override
     public void addPotionEffect(PotionType effect, int amplifier) {
+        if (effect == PotionTypes.BLINDNESS && (potionsMap == null || !potionsMap.containsKey(PotionTypes.BLINDNESS))) {
+            player.checkManager.getPostPredictionCheck(NoSlowE.class).startedSprintingBeforeBlind = player.isSprinting;
+        }
+
         player.pointThreeEstimator.updatePlayerPotions(effect, amplifier);
         super.addPotionEffect(effect, amplifier);
     }
